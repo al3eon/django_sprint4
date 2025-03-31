@@ -47,16 +47,22 @@ class UserProfileView(DetailView):
 
 class PostListView(ListView):
     template_name = 'blog/index.html'
-    context_object_name = 'post_list'
-    queryset = Post.objects.select_related(
-        'location',
-        'category',
-        'author'
-    ).filter(
-        is_published=True,
-        pub_date__lte=timezone.now(),
-        category__is_published=True
-    )[:LIMIT_POST]
+    context_object_name = 'page_obj'
+    paginate_by = 10
+
+    def get_queryset(self):
+        return Post.objects.select_related(
+            'location',
+            'category',
+            'author'
+        ).filter(
+            is_published=True,
+            pub_date__lte=timezone.now(),
+            category__is_published=True
+        )
+
+class AddCommentView(LoginRequiredMixin, CreateView):
+    pass
 
 
 class PostDetailView(DetailView):

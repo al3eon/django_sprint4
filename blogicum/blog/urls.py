@@ -11,4 +11,5 @@ urlpatterns = [
     path('posts/<int:pk>/', views.PostDetailView.as_view(), name='post_detail'),
     path('create/', views.PostCreateView.as_view(), name='create_post'),
     path('profile/<str:username>/', views.UserProfileView.as_view(), name='profile'),
+    path('posts/<int:post_id>/comment/', views.AddCommentView.as_view(), name='add_comment'),
 ]
