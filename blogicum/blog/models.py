@@ -70,6 +70,12 @@ class Post(BaseModel):
         help_text=('Если установить дату и время в будущем '
                    '— можно делать отложенные публикации.')
     )
+    image = models.ImageField(
+        verbose_name='Изображение',
+        upload_to='posts_images',
+        blank=True,
+        null=True
+    )
     author = models.ForeignKey(User, on_delete=models.CASCADE,
                                verbose_name='Автор публикации')
     location = models.ForeignKey(
@@ -94,3 +100,25 @@ class Post(BaseModel):
 
     def __str__(self):
         return self.title[:PREVIEW_NAME_LENGTH]
+
+class Comment(BaseModel):
+    text = models.TextField('Текст')
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Автор'
+    )
+    post = models.ForeignKey(
+        Post,
+        on_delete=models.CASCADE,
+        verbose_name='Комментируемый пост'
+    )
+
+    class Meta:
+        verbose_name = 'Комментарий'
+        verbose_name_plural = 'Комментарии'
+        default_related_name = 'comments'
+
+    def __str__(self):
+        return f'Комментарий {self.author} к {self.post}'
+

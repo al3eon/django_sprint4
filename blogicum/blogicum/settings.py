@@ -56,6 +56,8 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'blogicum.urls'
 
+MEDIA_ROOT = BASE_DIR / 'media'
+
 TEMPLATES_DIR = BASE_DIR / 'templates'
 
 TEMPLATES = [
@@ -129,6 +131,14 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     BASE_DIR / 'static_dev',
 ]
+
+EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'
+
+EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+
+LOGIN_URL = 'login'
+
+LOGIN_REDIRECT_URL = '/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
