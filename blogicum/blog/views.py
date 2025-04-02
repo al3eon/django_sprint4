@@ -47,10 +47,10 @@ def get_published_posts(
 
 class UserProfileView(DetailView):
     model = User
-    template_name = 'blog/profile.html'  # Используем существующий шаблон
-    context_object_name = 'profile'  # Как в вашем шаблоне!
-    slug_field = 'username'  # Ищем пользователя по полю username
-    slug_url_kwarg = 'username'  # Как назван параметр в URL
+    template_name = 'blog/profile.html'
+    context_object_name = 'profile'
+    slug_field = 'username'
+    slug_url_kwarg = 'username'
 
 
 class PostCreateView(LoginRequiredMixin, CreateView):
@@ -65,10 +65,8 @@ class PostCreateView(LoginRequiredMixin, CreateView):
     ]
 
     def form_valid(self, form):
-        # Автоматически назначаем автора = текущему пользователю
         form.instance.author = self.request.user
 
-        # Если pub_date не указана, ставим текущее время
         if not form.cleaned_data['pub_date']:
             form.instance.pub_date = timezone.now()
 
