@@ -5,10 +5,8 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-
 MAX_LENGTH_TITLE = 256
 PREVIEW_NAME_LENGTH = 50
-
 
 
 class BaseModel(models.Model):
@@ -101,6 +99,7 @@ class Post(BaseModel):
     def __str__(self):
         return self.title[:PREVIEW_NAME_LENGTH]
 
+
 class Comment(BaseModel):
     text = models.TextField('Текст')
     author = models.ForeignKey(
@@ -121,4 +120,3 @@ class Comment(BaseModel):
 
     def __str__(self):
         return f'Комментарий {self.author} к {self.post}'
-
