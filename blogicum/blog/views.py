@@ -22,7 +22,7 @@ def paginate_queryset(request, queryset, per_page=settings.LIMIT_POST):
 
 
 def get_posts(
-    posts=Post.objects.all(),
+    posts=Post.objects,
     apply_filtering=True,
     apply_annotation=True
 ):
