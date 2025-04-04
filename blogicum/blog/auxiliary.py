@@ -1,7 +1,7 @@
-from django.core.paginator import Paginator
-from django.utils import timezone
 from django.conf import settings
+from django.core.paginator import Paginator
 from django.db.models import Count
+from django.utils import timezone
 
 from .models import Post
 

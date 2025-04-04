@@ -3,17 +3,13 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.paginator import Paginator
-from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
-from django.utils import timezone
 from django.views.generic import CreateView, DetailView, ListView
 
-
+from .auxiliary import get_posts
 from .forms import CommentCreateForm, PostForm, UserEditForm
 from .models import Category, Comment, Post
-from .auxiliary import paginate_queryset, get_posts
 
 
 User = get_user_model()
@@ -77,7 +73,11 @@ class PostDetailView(DetailView):
     pk_url_kwarg = 'post_id'
 
     def get_object(self, queryset=None):
-        base_queryset = get_posts(Post.objects.all(), apply_filtering=False, apply_annotation=False)
+        base_queryset = get_posts(
+            Post.objects.all(),
+            apply_filtering=False,
+            apply_annotation=False
+        )
         post = get_object_or_404(base_queryset, pk=self.kwargs['post_id'])
 
         if post.author != self.request.user:
