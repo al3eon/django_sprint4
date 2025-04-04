@@ -10,36 +10,13 @@ from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views.generic import CreateView, DetailView, ListView
 
+
 from .forms import CommentCreateForm, PostForm, UserEditForm
 from .models import Category, Comment, Post
+from .auxiliary import paginate_queryset, get_posts
 
 
 User = get_user_model()
-
-
-def paginate_queryset(request, queryset, per_page=settings.LIMIT_POST):
-    return Paginator(queryset, per_page).get_page(request.GET.get('page'))
-
-
-def get_posts(
-    posts=Post.objects,
-    apply_filtering=True,
-    apply_annotation=True
-):
-    posts = posts.select_related('category', 'location', 'author')
-
-    if apply_filtering:
-        posts = posts.filter(
-            is_published=True,
-            pub_date__lt=timezone.now(),
-            category__is_published=True
-        )
-
-    if apply_annotation:
-        posts = posts.annotate(
-            comment_count=Count('comments')
-        )
-    return posts.order_by(*Post._meta.ordering)
 
 
 class RegistrationView(CreateView):
@@ -104,8 +81,10 @@ class PostDetailView(DetailView):
         post = get_object_or_404(base_queryset, pk=self.kwargs['post_id'])
 
         if post.author != self.request.user:
-            filtered_queryset = get_posts(Post.objects.all(), apply_filtering=True, apply_annotation=False)
-            post = get_object_or_404(filtered_queryset, pk=post.pk)
+            post = get_object_or_404(
+                get_posts(Post.objects.all(), apply_annotation=False),
+                pk=post.pk
+            )
 
         return post
 
