@@ -54,19 +54,20 @@ class UserProfileView(ListView):
     context_object_name = 'profile'
     paginate_by = settings.LIMIT_POST
 
+    def get_profile(self):
+        return get_object_or_404(User, username=self.kwargs['username'])
+
     def get_queryset(self):
-        self.profile = get_object_or_404(
-            User,
-            username=self.kwargs['username']
+        profile = self.get_profile()
+        return get_posts(
+            profile.posts.all(),
+            apply_filtering=self.request.user != profile,
+            apply_annotation=True
         )
-        queryset = self.profile.posts.all()
-        if self.request.user != self.profile:
-            queryset = get_posts(queryset, apply_filtering=True)
-        return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['profile'] = self.profile
+        context['profile'] = self.get_profile()
         return context
 
 
