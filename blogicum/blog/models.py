@@ -119,4 +119,5 @@ class Comment(BaseModel):
         default_related_name = 'comments'
 
     def __str__(self):
-        return f'Комментарий {self.author} к {self.post}'
+        return (f'Комментарий {self.author} к {self.post}: '
+                f'{self.text[:PREVIEW_NAME_LENGTH]}')

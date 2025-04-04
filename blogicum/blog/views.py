@@ -1,6 +1,8 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import Paginator
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
@@ -11,66 +13,60 @@ from django.views.generic import CreateView, DetailView, ListView
 from .forms import CommentCreateForm, PostForm, UserEditForm
 from .models import Category, Comment, Post
 
-LIMIT_POST = 10
-POST_ORDERING = ('-pub_date',)
 
 User = get_user_model()
 
 
-def paginate_queryset(request, queryset, per_page=LIMIT_POST):
+def paginate_queryset(request, queryset, per_page=settings.LIMIT_POST):
     return Paginator(queryset, per_page).get_page(request.GET.get('page'))
 
 
-def get_post(
+def get_posts(
     posts=Post.objects.all(),
-    use_filtering=True,
-    use_select_related=True,
-    use_annotation=True
+    apply_filtering=True,
+    apply_annotation=True
 ):
-    if use_filtering:
+    posts = posts.select_related('category', 'location', 'author')
+
+    if apply_filtering:
         posts = posts.filter(
             is_published=True,
             pub_date__lt=timezone.now(),
             category__is_published=True
         )
 
-    if use_select_related:
-        posts = posts.select_related('category', 'location', 'author')
-
-    if use_annotation:
+    if apply_annotation:
         posts = posts.annotate(
             comment_count=Count('comments')
         )
-    return posts.order_by(*POST_ORDERING)
+    return posts.order_by(*Post._meta.ordering)
 
 
-class AuthorMixin(UserPassesTestMixin):
-    def test_func(self):
-        target_object = self.get_object()
-        return target_object.author == self.request.user
+class RegistrationView(CreateView):
+    template_name = 'registration/registration_form.html'
+    form_class = UserCreationForm
+    success_url = reverse_lazy('pages:homepage')
 
 
-class UserProfileView(DetailView):
+class UserProfileView(ListView):
     model = User
     template_name = 'blog/profile.html'
     context_object_name = 'profile'
-    slug_field = 'username'
-    slug_url_kwarg = 'username'
+    paginate_by = settings.LIMIT_POST
 
-    def get_visible_posts(self):
-        """Возвращает посты, видимые текущему пользователю"""
-        user = self.object
-        return get_post(
-            posts=user.posts.all(),
-            use_filtering=self.request.user != user
+    def get_queryset(self):
+        self.profile = get_object_or_404(
+            User,
+            username=self.kwargs['username']
         )
+        queryset = self.profile.posts.all()
+        if self.request.user != self.profile:
+            queryset = get_posts(queryset, apply_filtering=True)
+        return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_obj'] = paginate_queryset(
-            self.request,
-            self.get_visible_posts()
-        )
+        context['profile'] = self.profile
         return context
 
 
@@ -103,36 +99,38 @@ class PostDetailView(DetailView):
     pk_url_kwarg = 'post_id'
 
     def get_object(self, queryset=None):
-        post = super().get_object(queryset)
+        if queryset is None:
+            queryset = self.get_queryset()
+
+        post = get_object_or_404(queryset, pk=self.kwargs['post_id'])
 
         if post.author == self.request.user:
             return post
 
-        published_posts = get_post(
+        published_posts = get_posts(
             Post.objects.all(),
-            use_select_related=False,
-            use_annotation=False
+            apply_annotation=False
         )
         return get_object_or_404(published_posts, pk=post.pk)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['comments'] = self.object.comments.all()
+        context['comments'] = self.object.comments.select_related('author')
         context['form'] = CommentCreateForm()
         return context
 
 
 class PostListView(ListView):
     model = Post
-    paginate_by = LIMIT_POST
+    paginate_by = settings.LIMIT_POST
     template_name = 'blog/index.html'
-    queryset = get_post()
+    queryset = get_posts()
 
 
 class CategoryPostsView(ListView):
     model = Post
     template_name = 'blog/category.html'
-    paginate_by = LIMIT_POST
+    paginate_by = settings.LIMIT_POST
 
     def fetch_category(self):
         category_slug = self.kwargs['category_slug']
@@ -144,7 +142,7 @@ class CategoryPostsView(ListView):
 
     def get_queryset(self):
         category = self.fetch_category()
-        return get_post(category.posts)
+        return get_posts(category.posts)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -202,7 +200,7 @@ def add_comment(request, post_id):
 
 @login_required
 def edit_comment(request, post_id, comment_id):
-    comment = get_object_or_404(Comment, id=comment_id)
+    comment = get_object_or_404(Comment, id=comment_id, post_id=post_id)
 
     if comment.author != request.user:
         return redirect('blog:post_detail', post_id=post_id)
@@ -220,7 +218,7 @@ def edit_comment(request, post_id, comment_id):
 
 @login_required
 def delete_comment(request, post_id, comment_id):
-    comment = get_object_or_404(Comment, id=comment_id)
+    comment = get_object_or_404(Comment, id=comment_id, post_id=post_id)
 
     if comment.author != request.user:
         return redirect('blog:post_detail', post_id)

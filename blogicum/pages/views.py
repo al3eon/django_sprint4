@@ -1,5 +1,14 @@
 from django.shortcuts import render
 from django.views.generic import TemplateView
+from django.contrib.auth.forms import UserCreationForm
+from django.urls import reverse_lazy
+from django.views.generic import CreateView
+
+
+class RegistrationView(CreateView):
+    template_name = 'registration/registration_form.html'
+    form_class = UserCreationForm
+    success_url = reverse_lazy('pages:homepage')
 
 
 class AboutPage(TemplateView):
@@ -11,8 +20,6 @@ class RulesPage(TemplateView):
 
 
 def page_not_found(request, exception):
-    # Переменная exception содержит отладочную информацию;
-    # выводить её в шаблон пользовательской страницы 404 мы не станем.
     return render(request, 'pages/404.html', status=404)
 
 
