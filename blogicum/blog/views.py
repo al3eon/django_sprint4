@@ -100,19 +100,14 @@ class PostDetailView(DetailView):
     pk_url_kwarg = 'post_id'
 
     def get_object(self, queryset=None):
-        if queryset is None:
-            queryset = self.get_queryset()
+        base_queryset = get_posts(Post.objects.all(), apply_filtering=False, apply_annotation=False)
+        post = get_object_or_404(base_queryset, pk=self.kwargs['post_id'])
 
-        post = get_object_or_404(queryset, pk=self.kwargs['post_id'])
+        if post.author != self.request.user:
+            filtered_queryset = get_posts(Post.objects.all(), apply_filtering=True, apply_annotation=False)
+            post = get_object_or_404(filtered_queryset, pk=post.pk)
 
-        if post.author == self.request.user:
-            return post
-
-        published_posts = get_posts(
-            Post.objects.all(),
-            apply_annotation=False
-        )
-        return get_object_or_404(published_posts, pk=post.pk)
+        return post
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
