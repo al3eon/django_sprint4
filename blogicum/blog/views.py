@@ -33,7 +33,7 @@ class UserProfileView(ListView):
     def get_queryset(self):
         profile = self.get_profile()
         return get_posts(
-            profile.posts.all(),
+            profile.posts,
             apply_filtering=self.request.user != profile,
             apply_annotation=True
         )
